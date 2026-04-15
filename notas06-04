@@ -1,0 +1,26 @@
+Notas para reunion 6 de abril.
+
+1. Definir carga y descarga de archivos.
+   - Como se entrega el excel de exportacion
+   - Como se carga excel de clientes
+   - Como se carga excel de productos.
+
+2. Proceso fisico: 
+¿Entregan folletos? Anotar ID cliente
+
+
+Admin: admin@feria.com / admin123
+Vendor: vendor1@feria.com / vendor123
+
+-Exportar por cliente, la suma de todas las ordenes.
+
+   Columna A: Siempre 1
+   Columna B: Clave articulo
+   Columna C: Cantidad
+   Columna D: Precio
+   Columna E: Descuento, siempre 0
+
+Cambiar panel de ordenes, enfocarnos en cliente, no en total.
+
+
+Interfaz de proveedor. No registrar cliente nuevo, quitar datos, solo confirmar Codigo de cliente y nombre.

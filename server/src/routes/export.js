@@ -23,20 +23,24 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
     for (const order of orders) {
       for (const item of order.items) {
         rows.push({
-          '# Orden':        order.orderNumber,
-          'Fecha':          new Date(order.createdAt).toLocaleDateString('es-MX'),
-          'Stand':          order.stand,
-          'Cliente':        order.customer.name,
-          'Correo':         order.customer.email || '',
-          'Pago':           order.paymentType,
-          'Factura':        order.requiresInvoice ? 'Sí' : 'No',
-          'Fecha Entrega':  new Date(order.deliveryDate).toLocaleDateString('es-MX'),
-          'Producto':       item.name,
-          'Código':         item.barcode,
-          'Cantidad':       item.quantity,
-          'Precio Unit.':   item.appliedPrice,
-          'Subtotal':       item.subtotal,
-          'Total Orden':    order.total
+          '# Orden': order.orderNumber,
+          'Fecha': new Date(order.createdAt).toLocaleDateString('es-MX'),
+          'Stand': order.stand,
+          'Cliente': order.customer.name,
+          'Correo': order.customer.email || '',
+          'Pago': order.paymentType,
+          'Factura': order.requiresInvoice ? 'Sí' : 'No',
+          'Fecha Entrega': order.customer?.deliveryDate
+            ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
+            : order.deliveryDate
+              ? new Date(order.deliveryDate).toLocaleDateString('es-MX')
+              : '—',
+          'Producto': item.name,
+          'Código': item.barcode,
+          'Cantidad': item.quantity,
+          'Precio Unit.': item.appliedPrice,
+          'Subtotal': item.subtotal,
+          'Total Orden': order.total
         });
       }
     }
@@ -52,9 +56,9 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
     }
 
     const standRows = Object.entries(standTotals).map(([stand, data]) => ({
-      'Stand':           stand,
-      'Total Órdenes':   data.ordenes,
-      'Total Ventas':    data.total
+      'Stand': stand,
+      'Total Órdenes': data.ordenes,
+      'Total Ventas': data.total
     }));
 
     // Crear workbook con dos hojas
@@ -69,6 +73,52 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
     res.setHeader('Content-Disposition', 'attachment; filename=ordenes_feria.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET /api/export/customer/:id — exportar órdenes de un cliente en formato Microsip
+
+router.get('/customer/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const Customer = require('../models/Customer');
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: 'Cliente no encontrado' });
+    }
+
+    const orders = await Order.find({ 'customer._id': req.params.id });
+
+    if (orders.length === 0) {
+      return res.status(404).json({ message: 'No hay órdenes para este cliente' });
+    }
+
+    // Aplanar todos los productos de todas las órdenes
+    const rows = [];
+    for (const order of orders) {
+      for (const item of order.items) {
+        rows.push({
+          'A': 1,
+          'B': item.barcode || '',  // SKU
+          'C': item.quantity,
+          'D': item.appliedPrice,
+          'E': 0
+        });
+      }
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows, { header: ['A', 'B', 'C', 'D', 'E'] });
+    XLSX.utils.book_append_sheet(wb, ws, customer.name.substring(0, 31));
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const filename = `${customer.customerCode}_${customer.name.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
 

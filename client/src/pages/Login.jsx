@@ -44,7 +44,6 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
 
-          {/* Logo mobile */}
           <div className="md:hidden flex justify-center mb-8">
             <img src={logo} alt="Dipamex" className="w-40 rounded-xl" />
           </div>
@@ -62,57 +61,52 @@ export default function Login() {
             </div>
           )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1" style={{ color: '#4a4a4a' }}>
-              Correo
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="correo@ejemplo.com"
-              className="w-full rounded-lg px-4 py-2.5 text-sm outline-none transition"
-              style={{
-                border: '1.5px solid #ddd',
-                backgroundColor: '#fff',
-                color: '#4a4a4a'
-              }}
-              onFocus={e => e.target.style.borderColor = '#5a8a3c'}
-              onBlur={e => e.target.style.borderColor = '#ddd'}
-            />
-          </div>
+          <form onSubmit={e => { e.preventDefault(); handleLogin(); }}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1" style={{ color: '#4a4a4a' }}>
+                Correo
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="correo@ejemplo.com"
+                autoComplete="email"
+                className="w-full rounded-lg px-4 py-2.5 text-sm outline-none transition"
+                style={{ border: '1.5px solid #ddd', backgroundColor: '#fff', color: '#4a4a4a' }}
+                onFocus={e => e.target.style.borderColor = '#5a8a3c'}
+                onBlur={e => e.target.style.borderColor = '#ddd'}
+              />
+            </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-1" style={{ color: '#4a4a4a' }}>
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              className="w-full rounded-lg px-4 py-2.5 text-sm outline-none transition"
-              style={{
-                border: '1.5px solid #ddd',
-                backgroundColor: '#fff',
-                color: '#4a4a4a'
-              }}
-              onFocus={e => e.target.style.borderColor = '#5a8a3c'}
-              onBlur={e => e.target.style.borderColor = '#ddd'}
-            />
-          </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1" style={{ color: '#4a4a4a' }}>
+                Contraseña
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className="w-full rounded-lg px-4 py-2.5 text-sm outline-none transition"
+                style={{ border: '1.5px solid #ddd', backgroundColor: '#fff', color: '#4a4a4a' }}
+                onFocus={e => e.target.style.borderColor = '#5a8a3c'}
+                onBlur={e => e.target.style.borderColor = '#ddd'}
+              />
+            </div>
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50"
-            style={{ backgroundColor: '#5a8a3c' }}
-            onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
-            onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
-          >
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50"
+              style={{ backgroundColor: '#5a8a3c' }}
+              onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
+              onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
+            >
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </button>
+          </form>
 
         </div>
       </div>

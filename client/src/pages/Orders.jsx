@@ -121,10 +121,7 @@ export default function Orders() {
   const total = items.reduce((sum, i) => sum + i.subtotal, 0);
 
   const canGoNext = () => {
-    if (step === 0) {
-      if (isNewCustomer) return newCustomer.name.trim() !== '';
-      return selectedCustomer !== null;
-    }
+    if (step === 0) return selectedCustomer !== null;
     if (step === 1) return items.length > 0;
     return true;
   };
@@ -133,27 +130,14 @@ export default function Orders() {
     try {
       setLoading(true);
       setError('');
-
-      const payload = {
+      await api.post('/orders', {
+        customerId: selectedCustomer._id,
         items: items.map(i => ({ productId: i.product, quantity: i.quantity }))
-      };
-
-      if (isNewCustomer) {
-        payload.customer = newCustomer;
-        payload.paymentType = 'contado';
-        payload.deliveryDate = new Date().toISOString();
-        payload.requiresInvoice = false;
-      } else {
-        payload.customerId = selectedCustomer._id;
-      }
-
-      await api.post('/orders', payload);
+      });
       setSuccess('¡Orden creada correctamente!');
       setStep(0);
       setItems([]);
       setSelectedCustomer(null);
-      setNewCustomer({ name: '', email: '' });
-      setIsNewCustomer(false);
       setCustomerQuery('');
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
@@ -211,100 +195,60 @@ export default function Orders() {
               ¿Quién realiza la compra?
             </h2>
             <p className="text-sm mb-6" style={{ color: '#9a9a9a' }}>
-              Busca un cliente existente o registra uno nuevo
+              Busca por nombre o código de cliente
             </p>
 
-            <div className="flex gap-2 mb-6">
-              <button
-                onClick={() => { setIsNewCustomer(false); setSelectedCustomer(null); }}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold transition"
-                style={{
-                  backgroundColor: !isNewCustomer ? '#5a8a3c' : '#f0f0f0',
-                  color: !isNewCustomer ? '#fff' : '#6b6b6b'
-                }}
-              >
-                Cliente existente
-              </button>
-              <button
-                onClick={() => { setIsNewCustomer(true); setSelectedCustomer(null); setCustomerQuery(''); }}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold transition"
-                style={{
-                  backgroundColor: isNewCustomer ? '#5a8a3c' : '#f0f0f0',
-                  color: isNewCustomer ? '#fff' : '#6b6b6b'
-                }}
-              >
-                Cliente nuevo
-              </button>
-            </div>
+            <input
+              type="text"
+              value={customerQuery}
+              onChange={e => { setCustomerQuery(e.target.value); setSelectedCustomer(null); }}
+              placeholder="Buscar por nombre o código (ej. C001)..."
+              className="w-full rounded-lg px-4 py-2 text-sm outline-none mb-2"
+              style={{ border: '1.5px solid #ddd' }}
+              onFocus={e => e.target.style.borderColor = '#5a8a3c'}
+              onBlur={e => e.target.style.borderColor = '#ddd'}
+            />
 
-            {!isNewCustomer && (
-              <div>
-                <input
-                  type="text"
-                  value={customerQuery}
-                  onChange={e => { setCustomerQuery(e.target.value); setSelectedCustomer(null); }}
-                  placeholder="Buscar por nombre, código o empresa..."
-                  className="w-full rounded-lg px-4 py-2 text-sm outline-none mb-2"
-                  style={{ border: '1.5px solid #ddd' }}
-                  onFocus={e => e.target.style.borderColor = '#5a8a3c'}
-                  onBlur={e => e.target.style.borderColor = '#ddd'}
-                />
-                {customerResults.length > 0 && !selectedCustomer && (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden mb-2">
-                    {customerResults.map(c => (
-                      <button key={c._id}
-                        onClick={() => { setSelectedCustomer(c); setCustomerQuery(c.name); setCustomerResults([]); }}
-                        className="w-full text-left px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                        <p className="text-sm font-medium" style={{ color: '#4a4a4a' }}>{c.name}</p>
-                        <p className="text-xs" style={{ color: '#9a9a9a' }}>
-                          {c.company || ''} {c.email ? `· ${c.email}` : ''}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {selectedCustomer && (
-                  <div className="rounded-lg px-4 py-3 flex justify-between items-center"
-                    style={{ backgroundColor: '#edf7e6', border: '1px solid #c3e6a8' }}>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: '#3d6b28' }}>
-                        {selectedCustomer.name}
-                      </p>
-                      <p className="text-xs" style={{ color: '#5a8a3c' }}>
-                        {selectedCustomer.paymentType} · {selectedCustomer.requiresInvoice ? 'Con factura' : 'Sin factura'}
-                      </p>
+            {customerResults.length > 0 && !selectedCustomer && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden mb-2">
+                {customerResults.map(c => (
+                  <button key={c._id}
+                    onClick={() => {
+                      setSelectedCustomer(c);
+                      setCustomerQuery(c.name);
+                      setCustomerResults([]);
+                      setItems([]); 
+                    }}
+                    className="w-full text-left px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold px-2 py-1 rounded-full"
+                        style={{ backgroundColor: '#edf7e6', color: '#3d6b28' }}>
+                        {c.customerCode}
+                      </span>
+                      <p className="text-sm font-medium" style={{ color: '#4a4a4a' }}>{c.name}</p>
                     </div>
-                    <button onClick={() => { setSelectedCustomer(null); setCustomerQuery(''); }}
-                      className="text-sm" style={{ color: '#5a8a3c' }}>✕</button>
-                  </div>
-                )}
+                    <p className="text-xs mt-1" style={{ color: '#9a9a9a' }}>
+                      {c.company || ''} {c.email ? `· ${c.email}` : ''}
+                    </p>
+                  </button>
+                ))}
               </div>
             )}
 
-            {isNewCustomer && (
-              <div className="flex flex-col gap-3">
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: '#6b6b6b' }}>Nombre *</label>
-                  <input type="text" value={newCustomer.name}
-                    onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    placeholder="Nombre completo o empresa"
-                    className="w-full rounded-lg px-4 py-2 text-sm outline-none"
-                    style={{ border: '1.5px solid #ddd' }}
-                    onFocus={e => e.target.style.borderColor = '#5a8a3c'}
-                    onBlur={e => e.target.style.borderColor = '#ddd'}
-                  />
+            {selectedCustomer && (
+              <div className="rounded-lg px-4 py-3 flex justify-between items-center"
+                style={{ backgroundColor: '#edf7e6', border: '1px solid #c3e6a8' }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-2 py-1 rounded-full"
+                    style={{ backgroundColor: '#fff', color: '#3d6b28' }}>
+                    {selectedCustomer.customerCode}
+                  </span>
+                  <p className="text-sm font-semibold" style={{ color: '#3d6b28' }}>
+                    {selectedCustomer.name}
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: '#6b6b6b' }}>Correo</label>
-                  <input type="email" value={newCustomer.email}
-                    onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    placeholder="correo@empresa.com"
-                    className="w-full rounded-lg px-4 py-2 text-sm outline-none"
-                    style={{ border: '1.5px solid #ddd' }}
-                    onFocus={e => e.target.style.borderColor = '#5a8a3c'}
-                    onBlur={e => e.target.style.borderColor = '#ddd'}
-                  />
-                </div>
+                <button onClick={() => { setSelectedCustomer(null); setCustomerQuery(''); }}
+                  className="text-sm" style={{ color: '#5a8a3c' }}>✕</button>
               </div>
             )}
 
@@ -409,36 +353,19 @@ export default function Orders() {
               Confirmar orden
             </h2>
             <p className="text-sm mb-6" style={{ color: '#9a9a9a' }}>
-              Revisa los detalles antes de confirmar
+              Revisa los productos antes de confirmar
             </p>
 
-            {/* Resumen cliente */}
-            <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: '#f5f5f3' }}>
-              <p className="text-xs mb-2 font-medium uppercase tracking-wide" style={{ color: '#9a9a9a' }}>
-                Cliente
-              </p>
+            {/* Resumen cliente — solo código y nombre */}
+            <div className="rounded-xl p-4 mb-4 flex items-center gap-3"
+              style={{ backgroundColor: '#f5f5f3' }}>
+              <span className="text-sm font-bold px-3 py-1 rounded-full"
+                style={{ backgroundColor: '#edf7e6', color: '#3d6b28' }}>
+                {selectedCustomer?.customerCode}
+              </span>
               <p className="text-sm font-semibold" style={{ color: '#4a4a4a' }}>
-                {isNewCustomer ? newCustomer.name : selectedCustomer?.name}
+                {selectedCustomer?.name}
               </p>
-              {!isNewCustomer && selectedCustomer && (
-                <div className="flex gap-4 mt-2">
-                  <span className="text-xs px-2 py-1 rounded-full font-medium"
-                    style={{
-                      backgroundColor: selectedCustomer.paymentType === 'contado' ? '#edf7e6' : '#fff8e6',
-                      color: selectedCustomer.paymentType === 'contado' ? '#3d6b28' : '#b07d00'
-                    }}>
-                    {selectedCustomer.paymentType}
-                  </span>
-                  {selectedCustomer.deliveryDate && (
-                    <span className="text-xs" style={{ color: '#6b6b6b' }}>
-                      Entrega: {new Date(selectedCustomer.deliveryDate).toLocaleDateString('es-MX')}
-                    </span>
-                  )}
-                  <span className="text-xs" style={{ color: '#6b6b6b' }}>
-                    {selectedCustomer.requiresInvoice ? '📄 Con factura' : 'Sin factura'}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Resumen productos */}

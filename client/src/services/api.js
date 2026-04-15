@@ -14,13 +14,17 @@ api.interceptors.request.use((config) => {
 });
 
 // Si el token expira, redirigir al login
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+      // Solo redirigir si NO estamos en el login
+      if (window.location.pathname !== '/') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }

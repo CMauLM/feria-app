@@ -56,6 +56,7 @@ router.post('/', protect, async (req, res) => {
         _id: customer._id,
         name: customer.name,
         email: customer.email,
+        customerCode: customer.customerCode,
         paymentType: customer.paymentType,
         deliveryDate: customer.deliveryDate,
         requiresInvoice: customer.requiresInvoice
@@ -80,8 +81,12 @@ router.get('/', protect, async (req, res) => {
     if (req.query.paymentType) filter['customer.paymentType'] = req.query.paymentType;
     if (req.query.requiresInvoice) filter['customer.requiresInvoice'] = req.query.requiresInvoice === 'true';
     if (req.query.status) filter.status = req.query.status;
-    if (req.query.customer) filter['customer.name'] = { $regex: req.query.customer, $options: 'i' };
-
+if (req.query.customer) {
+  filter.$or = [
+    { 'customer.name': { $regex: req.query.customer, $options: 'i' } },
+    { 'customer.customerCode': { $regex: req.query.customer, $options: 'i' } }
+  ];
+}
     if (req.user.role === 'vendor') {
       filter.vendorUser = req.user._id;
     }

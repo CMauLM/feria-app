@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import Navbar from '../components/Navbar';
 import Users from './Users';
 import Products from './Products';
 import Customers from './Customers';
-import Navbar from '../components/Navbar';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [view, setView] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedOrder, setExpandedOrder] = useState(null);
   const [filters, setFilters] = useState({
     stand: '',
     paymentType: '',
@@ -27,6 +28,9 @@ export default function Dashboard() {
       if (filters.stand) params.stand = filters.stand;
       if (filters.paymentType) params.paymentType = filters.paymentType;
       if (filters.requiresInvoice !== '') params.requiresInvoice = filters.requiresInvoice;
+      if (filters.customer) params.customer = filters.customer;
+      if (filters.sortBy) params.sortBy = filters.sortBy;
+      if (filters.order) params.order = filters.order;
 
       const { data } = await api.get('/orders', { params });
       setOrders(data);
@@ -37,11 +41,9 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, [filters]);
+  useEffect(() => { fetchOrders(); }, [filters]);
 
-  const handleExport = async () => {
+  const handleExportAll = async () => {
     try {
       const params = {};
       if (filters.stand) params.stand = filters.stand;
@@ -65,6 +67,23 @@ export default function Dashboard() {
     }
   };
 
+  const handleExportCustomer = async (customerId, customerCode, customerName) => {
+    try {
+      const response = await api.get(`/export/customer/${customerId}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${customerCode}_${customerName}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSort = (field) => {
     setFilters(prev => ({
       ...prev,
@@ -78,12 +97,27 @@ export default function Dashboard() {
     return <span style={{ color: '#5a8a3c' }}>{filters.order === 'asc' ? ' ↑' : ' ↓'}</span>;
   };
 
+  // Agrupar órdenes por cliente
+  const groupedByCustomer = orders.reduce((acc, order) => {
+    const key = order.customer?._id || order.customer?.name || 'Sin cliente';
+    if (!acc[key]) {
+      acc[key] = {
+        customerId: order.customer?._id,
+        customerCode: order.customer?.customerCode,
+        customerName: order.customer?.name || 'Sin nombre',
+        paymentType: order.customer?.paymentType,
+        orders: []
+      };
+    }
+    acc[key].orders.push(order);
+    return acc;
+  }, {});
+
   const totalGeneral = orders.reduce((sum, o) => sum + o.total, 0);
+  const isGrouped = filters.customer !== '';
 
   return (
-    <div className="min-h-screen bg-gray-100">
-
-      {/* Navbar */}
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f3' }}>
       <Navbar title="Panel Administrador" />
 
       {/* Pestañas */}
@@ -112,48 +146,44 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Vista Usuarios */}
       {view === 'users' && <Users />}
-      {/* Vista Productos */}
       {view === 'products' && <Products />}
-      {/* Vista Clientes */}
       {view === 'customers' && <Customers />}
-      {/* Vista Órdenes */}
+
       {view === 'orders' && (
         <div className="max-w-7xl mx-auto px-6 py-6">
 
           {/* Métricas */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm text-gray-500">Total órdenes</p>
-              <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
+              <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
+              <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>{orders.length}</p>
             </div>
             <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm text-gray-500">Total ventas</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-sm" style={{ color: '#9a9a9a' }}>Total ventas</p>
+              <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
                 ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm text-gray-500">Requieren factura</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {orders.filter(o => o.requiresInvoice).length}
+              <p className="text-sm" style={{ color: '#9a9a9a' }}>Clientes</p>
+              <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>
+                {Object.keys(groupedByCustomer).length}
               </p>
             </div>
           </div>
 
           {/* Filtros */}
-
           <div className="bg-white rounded-xl shadow p-4 mb-6 flex gap-3 flex-wrap items-center">
             <input
               type="text"
-              placeholder="Buscar cliente..."
+              placeholder="Filtrar por cliente..."
               value={filters.customer || ''}
               onChange={e => setFilters({ ...filters, customer: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              style={{ minWidth: '160px' }}
+              className="rounded-lg px-3 py-2 text-sm outline-none"
+              style={{ border: '1.5px solid #ddd', minWidth: '180px' }}
               onFocus={e => e.target.style.borderColor = '#5a8a3c'}
-              onBlur={e => e.target.style.borderColor = '#d1d5db'}
+              onBlur={e => e.target.style.borderColor = '#ddd'}
             />
             <select
               value={filters.stand}
@@ -191,88 +221,239 @@ export default function Dashboard() {
               Limpiar
             </button>
             <button
-              onClick={handleExport}
+              onClick={handleExportAll}
               className="ml-auto text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
               style={{ backgroundColor: '#5a8a3c' }}
               onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
               onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
             >
-              Exportar Excel
+              Exportar todo
             </button>
           </div>
 
-          {/* Tabla */}
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            {loading ? (
-              <div className="p-8 text-center text-gray-500">Cargando órdenes...</div>
-            ) : orders.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">No hay órdenes registradas</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-xs uppercase" style={{ color: '#6b6b6b' }}>
-                  <tr>
-                    <th className="px-4 py-3 text-left"># Orden</th>
-                    <th className="px-4 py-3 text-left">
-                      <button onClick={() => handleSort('customer.name')} className="flex items-center hover:opacity-70">
-                        Cliente <SortIcon field="customer.name" />
-                      </button>
-                    </th>
-                    <th className="px-4 py-3 text-left">Stand</th>
-                    <th className="px-4 py-3 text-left">Pago</th>
-                    <th className="px-4 py-3 text-left">
-                      <button onClick={() => handleSort('customer.deliveryDate')} className="flex items-center hover:opacity-70">
-                        Entrega <SortIcon field="customer.deliveryDate" />
-                      </button>
-                    </th>
-                    <th className="px-4 py-3 text-left">Factura</th>
-                    <th className="px-4 py-3 text-right">
-                      <button onClick={() => handleSort('total')} className="flex items-center ml-auto hover:opacity-70">
-                        Total <SortIcon field="total" />
-                      </button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {orders.map(order => (
-                    <tr key={order._id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-blue-600">{order.orderNumber}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-800">{order.customer.name}</p>
-                        <p className="text-gray-400 text-xs">{order.customer.email}</p>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{order.stand}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.customer?.paymentType === 'contado'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                          {order.customer?.paymentType || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {order.customer?.deliveryDate
-                          ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
-                          : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {order.requiresInvoice
-                          ? <span className="text-blue-600 font-medium">Sí</span>
-                          : <span className="text-gray-400">No</span>
-                        }
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-800">
-                        ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          {/* Vista agrupada por cliente */}
+          {isGrouped ? (
+            <div className="flex flex-col gap-4">
+              {Object.values(groupedByCustomer).map(group => (
+                <div key={group.customerId} className="bg-white rounded-xl shadow overflow-hidden">
+                  {/* Header del cliente */}
+                  <div className="flex items-center justify-between px-5 py-4"
+                    style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold px-2 py-1 rounded-full"
+                        style={{ backgroundColor: '#edf7e6', color: '#3d6b28' }}>
+                        {group.customerCode || '—'}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-sm" style={{ color: '#4a4a4a' }}>
+                          {group.customerName}
+                        </p>
+                        <p className="text-xs" style={{ color: '#9a9a9a' }}>
+                          {group.orders.length} orden{group.orders.length > 1 ? 'es' : ''} ·{' '}
+                          ${group.orders.reduce((s, o) => s + o.total, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleExportCustomer(group.customerId, group.customerCode, group.customerName)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition"
+                      style={{ backgroundColor: '#5a8a3c' }}
+                      onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
+                      onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
+                    >
+                      Exportar Microsip
+                    </button>
+                  </div>
 
+                  {/* Órdenes del cliente */}
+                  <table className="w-full text-sm">
+                    <thead className="uppercase text-xs" style={{ backgroundColor: '#f9f9f9', color: '#9a9a9a' }}>
+                      <tr>
+                        <th className="px-5 py-2 text-left"># Orden</th>
+                        <th className="px-5 py-2 text-left">Stand</th>
+                        <th className="px-5 py-2 text-left">Productos</th>
+                        <th className="px-5 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {group.orders.map(order => (
+                        <>
+                          <tr key={order._id}
+                            className="cursor-pointer hover:bg-gray-50"
+                            onClick={() => setExpandedOrder(expandedOrder === order._id ? null : order._id)}>
+                            <td className="px-5 py-3 font-medium" style={{ color: '#5a8a3c' }}>
+                              {order.orderNumber}
+                            </td>
+                            <td className="px-5 py-3" style={{ color: '#6b6b6b' }}>{order.stand}</td>
+                            <td className="px-5 py-3" style={{ color: '#6b6b6b' }}>
+                              {order.items.length} producto{order.items.length > 1 ? 's' : ''}
+                            </td>
+                            <td className="px-5 py-3 text-right font-semibold" style={{ color: '#4a4a4a' }}>
+                              ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                          {expandedOrder === order._id && (
+                            <tr key={`${order._id}-detail`}>
+                              <td colSpan={4} className="px-5 py-3" style={{ backgroundColor: '#fafafa' }}>
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr style={{ color: '#9a9a9a' }}>
+                                      <th className="text-left py-1">Producto</th>
+                                      <th className="text-left py-1">SKU</th>
+                                      <th className="text-center py-1">Cantidad</th>
+                                      <th className="text-right py-1">Precio</th>
+                                      <th className="text-right py-1">Subtotal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {order.items.map((item, i) => (
+                                      <tr key={i} className="border-t border-gray-100">
+                                        <td className="py-1.5" style={{ color: '#4a4a4a' }}>{item.name}</td>
+                                        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
+                                        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
+                                        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
+                                          ${item.appliedPrice?.toLocaleString('es-MX')}
+                                        </td>
+                                        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
+                                          ${item.subtotal?.toLocaleString('es-MX')}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Vista normal — todas las órdenes */
+            <div className="bg-white rounded-xl shadow overflow-hidden">
+              {loading ? (
+                <div className="p-8 text-center text-sm" style={{ color: '#9a9a9a' }}>
+                  Cargando órdenes...
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="p-8 text-center text-sm" style={{ color: '#9a9a9a' }}>
+                  No hay órdenes registradas
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="uppercase text-xs" style={{ backgroundColor: '#f5f5f3', color: '#6b6b6b' }}>
+                    <tr>
+                      <th className="px-4 py-3 text-left"># Orden</th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('customer.name')} className="flex items-center hover:opacity-70">
+                          Cliente <SortIcon field="customer.name" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">Stand</th>
+                      <th className="px-4 py-3 text-left">Pago</th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('customer.deliveryDate')} className="flex items-center hover:opacity-70">
+                          Entrega <SortIcon field="customer.deliveryDate" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">Factura</th>
+                      <th className="px-4 py-3 text-right">
+                        <button onClick={() => handleSort('total')} className="flex items-center ml-auto hover:opacity-70">
+                          Total <SortIcon field="total" />
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {orders.map(order => (
+                      <>
+                        <tr key={order._id}
+                          className="cursor-pointer hover:bg-gray-50"
+                          onClick={() => setExpandedOrder(expandedOrder === order._id ? null : order._id)}>
+                          <td className="px-4 py-3 font-medium" style={{ color: '#5a8a3c' }}>
+                            {order.orderNumber}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              {order.customer?.customerCode && (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                  style={{ backgroundColor: '#edf7e6', color: '#3d6b28' }}>
+                                  {order.customer.customerCode}
+                                </span>
+                              )}
+                              <p className="font-medium" style={{ color: '#4a4a4a' }}>
+                                {order.customer?.name}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3" style={{ color: '#6b6b6b' }}>{order.stand}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium"
+                              style={{
+                                backgroundColor: order.customer?.paymentType === 'contado' ? '#edf7e6' : '#fff8e6',
+                                color: order.customer?.paymentType === 'contado' ? '#3d6b28' : '#b07d00'
+                              }}>
+                              {order.customer?.paymentType || '—'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3" style={{ color: '#6b6b6b' }}>
+                            {order.customer?.deliveryDate
+                              ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
+                              : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {order.customer?.requiresInvoice
+                              ? <span className="font-medium" style={{ color: '#5a8a3c' }}>Sí</span>
+                              : <span style={{ color: '#9a9a9a' }}>No</span>}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold" style={{ color: '#4a4a4a' }}>
+                            ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                        {expandedOrder === order._id && (
+                          <tr key={`${order._id}-detail`}>
+                            <td colSpan={7} className="px-4 py-3" style={{ backgroundColor: '#fafafa' }}>
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr style={{ color: '#9a9a9a' }}>
+                                    <th className="text-left py-1">Producto</th>
+                                    <th className="text-left py-1">SKU</th>
+                                    <th className="text-center py-1">Cantidad</th>
+                                    <th className="text-right py-1">Precio</th>
+                                    <th className="text-right py-1">Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {order.items.map((item, i) => (
+                                    <tr key={i} className="border-t border-gray-100">
+                                      <td className="py-1.5" style={{ color: '#4a4a4a' }}>{item.name}</td>
+                                      <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
+                                      <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
+                                      <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
+                                        ${item.appliedPrice?.toLocaleString('es-MX')}
+                                      </td>
+                                      <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
+                                        ${item.subtotal?.toLocaleString('es-MX')}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </div>
       )}
-
     </div>
   );
 }

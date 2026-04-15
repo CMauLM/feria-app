@@ -37,6 +37,7 @@ const orderSchema = new mongoose.Schema({
     _id: mongoose.Schema.Types.ObjectId,
     name: String,
     email: String,
+    customerCode: String,
     paymentType: String,
     deliveryDate: Date,
     requiresInvoice: Boolean
