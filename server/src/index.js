@@ -19,6 +19,10 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/export', exportRoutes); 
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://feria-app.netlify.app'],
+  credentials: true
+}));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Feria App API running' });
