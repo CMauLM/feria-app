@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: 'https://feria-app-production.up.railway.app/api'
 });
 
 // Agregar token automáticamente a cada request
