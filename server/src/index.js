@@ -6,23 +6,24 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const customerRoutes = require('./routes/customers');
-const exportRoutes = require('./routes/export'); 
+const exportRoutes = require('./routes/export');
 
 dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-app.use('/api/auth', authRoutes); 
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/export', exportRoutes); 
+
 app.use(cors({
   origin: ['http://localhost:5173', 'https://feria-app.netlify.app'],
   credentials: true
 }));
+app.use(express.json());
+
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/export', exportRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Feria App API running' });
