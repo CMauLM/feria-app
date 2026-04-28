@@ -69,14 +69,21 @@ router.get('/search', protect, async (req, res) => {
       return res.status(400).json({ message: 'Parámetro de búsqueda requerido' });
     }
 
-    const products = await Product.find({
+    const filter = {
       $or: [
         { barcode: { $regex: q, $options: 'i' } },
         { name: { $regex: q, $options: 'i' } },
         { sku: { $regex: q, $options: 'i' } }
       ]
-    }).limit(10);
+    };
 
+    // Si es vendor con prefijos asignados, filtrar
+    if (req.user.role === 'vendor' && req.user.productPrefixes?.length > 0) {
+      const prefixRegex = req.user.productPrefixes.map(p => `^${p}\\.`).join('|');
+      filter.barcode = { $regex: prefixRegex };
+    }
+
+    const products = await Product.find(filter).limit(10);
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -90,12 +97,20 @@ router.get('/', protect, async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const products = await Product.find()
+    const filter = {};
+
+    // Si es vendor con prefijos asignados, filtrar
+    if (req.user.role === 'vendor' && req.user.productPrefixes?.length > 0) {
+      const prefixRegex = req.user.productPrefixes.map(p => `^${p}\\.`).join('|');
+      filter.barcode = { $regex: prefixRegex };
+    }
+
+    const products = await Product.find(filter)
       .skip(skip)
       .limit(limit)
       .sort({ name: 1 });
 
-    const total = await Product.countDocuments();
+    const total = await Product.countDocuments(filter);
 
     res.json({ products, total, page });
   } catch (error) {

@@ -45,7 +45,8 @@ router.post('/', protect, async (req, res) => {
         priceCredito: product.priceCredito,
         appliedPrice,
         quantity: item.quantity,
-        subtotal
+        subtotal,
+        notes: item.notes || ''
       });
     }
 

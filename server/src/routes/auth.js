@@ -43,15 +43,16 @@ router.get('/users', protect, adminOnly, async (req, res) => {
 
 // POST /api/auth/register (solo admin puede crear usuarios)
 router.post('/register', protect, adminOnly, async (req, res) => {
+  console.log('Body recibido en register:', req.body);
   try {
-    const { name, email, password, role, stand } = req.body;
+    const { name, email, password, role, stand, productPrefixes } = req.body;
 
     const exists = await User.findOne({ email });
     if (exists) {
       return res.status(400).json({ message: 'El usuario ya existe' });
     }
 
-    const user = await User.create({ name, email, password, role, stand });
+    const user = await User.create({ name, email, password, role, stand, productPrefixes });
 
     res.status(201).json({
       _id: user._id,
@@ -64,5 +65,33 @@ router.post('/register', protect, adminOnly, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+// PUT /api/auth/users/:id (solo admin)
+router.put('/users/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const { name, email, role, stand, productPrefixes, password } = req.body;
+    const update = { name, email, role, stand, productPrefixes };
 
+    if (password) {
+      const bcrypt = require('bcryptjs');
+      update.password = await bcrypt.hash(password, 10);
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-password');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE /api/auth/users/:id (solo admin)
+router.delete('/users/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+    res.json({ message: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 module.exports = router;

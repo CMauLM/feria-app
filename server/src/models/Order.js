@@ -16,7 +16,8 @@ const orderItemSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
-  subtotal: Number
+  subtotal: Number,
+  notes: { type: String, default: '' }
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({

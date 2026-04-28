@@ -23,25 +23,26 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
     for (const order of orders) {
       for (const item of order.items) {
         rows.push({
-          '# Orden': order.orderNumber,
-          'Fecha': new Date(order.createdAt).toLocaleDateString('es-MX'),
-          'Stand': order.stand,
-          'Cliente': order.customer.name,
-          'Correo': order.customer.email || '',
-          'Pago': order.paymentType,
-          'Factura': order.requiresInvoice ? 'Sí' : 'No',
-          'Fecha Entrega': order.customer?.deliveryDate
-            ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
-            : order.deliveryDate
-              ? new Date(order.deliveryDate).toLocaleDateString('es-MX')
-              : '—',
-          'Producto': item.name,
-          'Código': item.barcode,
-          'Cantidad': item.quantity,
-          'Precio Unit.': item.appliedPrice,
-          'Subtotal': item.subtotal,
-          'Total Orden': order.total
-        });
+  '# Orden': order.orderNumber,
+  'Fecha': new Date(order.createdAt).toLocaleDateString('es-MX'),
+  'Stand': order.stand,
+  'Cliente': order.customer.name,
+  'Correo': order.customer.email || '',
+  'Pago': order.customer?.paymentType || order.paymentType,
+  'Factura': order.customer?.requiresInvoice ?? order.requiresInvoice ? 'Sí' : 'No',
+  'Fecha Entrega': order.customer?.deliveryDate
+    ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
+    : order.deliveryDate
+      ? new Date(order.deliveryDate).toLocaleDateString('es-MX')
+      : '—',
+  'Producto': item.name,
+  'Código': item.barcode,
+  'Cantidad': item.quantity,
+  'Precio Unit.': item.appliedPrice,
+  'Subtotal': item.subtotal,
+  'Total Orden': order.total,
+  'Observaciones': item.notes || ''
+});
       }
     }
 

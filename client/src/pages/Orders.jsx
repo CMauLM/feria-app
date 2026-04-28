@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
+import { StickyNote } from 'lucide-react';
 
 const steps = ['Cliente', 'Productos', 'Confirmar'];
 
@@ -15,6 +16,7 @@ export default function Orders() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', email: '' });
+  const [editingNoteId, setEditingNoteId] = useState(null);
 
   // Productos
   const [query, setQuery] = useState('');
@@ -47,7 +49,7 @@ export default function Orders() {
   // Foco en buscador de productos
   useEffect(() => {
     if (step === 1) searchRef.current?.focus();
-  }, [step, items]);
+  }, [step]);
 
   // Buscar productos
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function Orders() {
       setError('');
       await api.post('/orders', {
         customerId: selectedCustomer._id,
-        items: items.map(i => ({ productId: i.product, quantity: i.quantity }))
+        items: items.map(i => ({ productId: i.product, quantity: i.quantity, notes: i.notes || '' }))
       });
       setSuccess('¡Orden creada correctamente!');
       setStep(0);
@@ -145,6 +147,14 @@ export default function Orders() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateNote = (productId, notes) => {
+    setItems(prev =>
+      prev.map(i =>
+        i.product === productId ? { ...i, notes } : i
+      )
+    );
   };
 
   return (
@@ -217,7 +227,7 @@ export default function Orders() {
                       setSelectedCustomer(c);
                       setCustomerQuery(c.name);
                       setCustomerResults([]);
-                      setItems([]); 
+                      setItems([]);
                     }}
                     className="w-full text-left px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50">
                     <div className="flex items-center gap-2">
@@ -300,26 +310,66 @@ export default function Orders() {
             ) : (
               <div className="flex flex-col gap-2 mb-4">
                 {items.map(item => (
-                  <div key={item.product} className="flex items-center gap-3 rounded-xl p-3"
+                  <div key={item.product} className="rounded-xl"
                     style={{ border: '1px solid #e5e5e5' }}>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium" style={{ color: '#4a4a4a' }}>{item.name}</p>
-                      <p className="text-xs" style={{ color: '#9a9a9a' }}>${item.appliedPrice} MXN c/u</p>
+                    <div className="flex items-center gap-3 p-3">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium" style={{ color: '#4a4a4a' }}>{item.name}</p>
+                        <p className="text-xs" style={{ color: '#9a9a9a' }}>${item.appliedPrice} MXN c/u</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => updateQuantity(item.product, item.quantity - 1)}
+                          className="w-7 h-7 rounded-full text-sm font-bold"
+                          style={{ backgroundColor: '#f0f0f0', color: '#4a4a4a' }}>−</button>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={e => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val >= 1) updateQuantity(item.product, val);
+                          }}
+                          className="w-14 text-sm font-semibold text-center rounded-lg outline-none"
+                          style={{
+                            border: '1.5px solid #e5e5e5',
+                            padding: '2px 4px',
+                            color: '#4a4a4a'
+                          }}
+                          onFocus={e => e.target.style.borderColor = '#5a8a3c'}
+                          onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                        />
+                        <button onClick={() => updateQuantity(item.product, item.quantity + 1)}
+                          className="w-7 h-7 rounded-full text-sm font-bold"
+                          style={{ backgroundColor: '#f0f0f0', color: '#4a4a4a' }}>+</button>
+                      </div>
+                      <p className="text-sm font-semibold w-20 text-right" style={{ color: '#4a4a4a' }}>
+                        ${item.subtotal.toLocaleString('es-MX')}
+                      </p>
+                      <button
+                        onClick={() => setEditingNoteId(editingNoteId === item.product ? null : item.product)}
+                        className="p-1 rounded-lg transition"
+                        style={{ color: item.notes ? '#5a8a3c' : '#9a9a9a' }}
+                        title="Agregar observación"
+                      >
+                        <StickyNote size={16} />
+                      </button>
+                      <button onClick={() => removeItem(item.product)}
+                        className="text-xs ml-1" style={{ color: '#e57373' }}>✕</button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => updateQuantity(item.product, item.quantity - 1)}
-                        className="w-7 h-7 rounded-full text-sm font-bold"
-                        style={{ backgroundColor: '#f0f0f0', color: '#4a4a4a' }}>−</button>
-                      <span className="text-sm font-semibold w-6 text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product, item.quantity + 1)}
-                        className="w-7 h-7 rounded-full text-sm font-bold"
-                        style={{ backgroundColor: '#f0f0f0', color: '#4a4a4a' }}>+</button>
-                    </div>
-                    <p className="text-sm font-semibold w-20 text-right" style={{ color: '#4a4a4a' }}>
-                      ${item.subtotal.toLocaleString('es-MX')}
-                    </p>
-                    <button onClick={() => removeItem(item.product)}
-                      className="text-xs ml-1" style={{ color: '#e57373' }}>✕</button>
+                    {(editingNoteId === item.product || item.notes) && (
+                      <div className="px-3 pb-3">
+                        <textarea
+                          value={item.notes || ''}
+                          onChange={e => updateNote(item.product, e.target.value)}
+                          placeholder="Observaciones (ej: 50 rojas, 50 negras)"
+                          rows="2"
+                          className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none"
+                          style={{ border: '1.5px solid #e5e5e5', color: '#4a4a4a' }}
+                          onFocus={e => e.target.style.borderColor = '#5a8a3c'}
+                          onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div className="flex justify-between pt-3 border-t border-gray-100">

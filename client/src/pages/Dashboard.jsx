@@ -97,7 +97,6 @@ export default function Dashboard() {
     return <span style={{ color: '#5a8a3c' }}>{filters.order === 'asc' ? ' ↑' : ' ↓'}</span>;
   };
 
-  // Agrupar órdenes por cliente
   const groupedByCustomer = orders.reduce((acc, order) => {
     const key = order.customer?._id || order.customer?.name || 'Sin cliente';
     if (!acc[key]) {
@@ -120,7 +119,6 @@ export default function Dashboard() {
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f3' }}>
       <Navbar title="Panel Administrador" />
 
-      {/* Pestañas */}
       <div className="bg-white border-b border-gray-200 px-6">
         <div className="flex gap-1 py-2">
           {[
@@ -153,7 +151,6 @@ export default function Dashboard() {
       {view === 'orders' && (
         <div className="max-w-7xl mx-auto px-6 py-6">
 
-          {/* Métricas */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow p-4">
               <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
@@ -173,7 +170,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Filtros */}
           <div className="bg-white rounded-xl shadow p-4 mb-6 flex gap-3 flex-wrap items-center">
             <input
               type="text"
@@ -231,12 +227,10 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Vista agrupada por cliente */}
           {isGrouped ? (
             <div className="flex flex-col gap-4">
               {Object.values(groupedByCustomer).map(group => (
                 <div key={group.customerId} className="bg-white rounded-xl shadow overflow-hidden">
-                  {/* Header del cliente */}
                   <div className="flex items-center justify-between px-5 py-4"
                     style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <div className="flex items-center gap-3">
@@ -265,7 +259,6 @@ export default function Dashboard() {
                     </button>
                   </div>
 
-                  {/* Órdenes del cliente */}
                   <table className="w-full text-sm">
                     <thead className="uppercase text-xs" style={{ backgroundColor: '#f9f9f9', color: '#9a9a9a' }}>
                       <tr>
@@ -295,32 +288,36 @@ export default function Dashboard() {
                           {expandedOrder === order._id && (
                             <tr key={`${order._id}-detail`}>
                               <td colSpan={4} className="px-5 py-3" style={{ backgroundColor: '#fafafa' }}>
-                                <table className="w-full text-xs">
-                                  <thead>
-                                    <tr style={{ color: '#9a9a9a' }}>
-                                      <th className="text-left py-1">Producto</th>
-                                      <th className="text-left py-1">SKU</th>
-                                      <th className="text-center py-1">Cantidad</th>
-                                      <th className="text-right py-1">Precio</th>
-                                      <th className="text-right py-1">Subtotal</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {order.items.map((item, i) => (
-                                      <tr key={i} className="border-t border-gray-100">
-                                        <td className="py-1.5" style={{ color: '#4a4a4a' }}>{item.name}</td>
-                                        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
-                                        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
-                                        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
-                                          ${item.appliedPrice?.toLocaleString('es-MX')}
-                                        </td>
-                                        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
-                                          ${item.subtotal?.toLocaleString('es-MX')}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
+  <thead>
+    <tr style={{ color: '#9a9a9a' }}>
+      <th className="text-left py-1" style={{ width: '35%' }}>Producto</th>
+      <th className="text-left py-1" style={{ width: '12%' }}>SKU</th>
+      <th className="text-center py-1" style={{ width: '10%' }}>Cantidad</th>
+      <th className="text-right py-1" style={{ width: '10%' }}>Precio</th>
+      <th className="text-right py-1" style={{ width: '10%' }}>Subtotal</th>
+      <th className="text-left py-1 pl-3" style={{ width: '23%' }}>Observaciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {order.items.map((item, i) => (
+      <tr key={i} className="border-t border-gray-100">
+        <td className="py-1.5 pr-2" style={{ color: '#4a4a4a' }}>{item.name}</td>
+        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
+        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
+        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
+          ${item.appliedPrice?.toLocaleString('es-MX')}
+        </td>
+        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
+          ${item.subtotal?.toLocaleString('es-MX')}
+        </td>
+        <td className="py-1.5 pl-3" style={{ color: '#6b6b6b', fontStyle: 'italic' }}>
+          {item.notes || '—'}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
                               </td>
                             </tr>
                           )}
@@ -332,7 +329,6 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            /* Vista normal — todas las órdenes */
             <div className="bg-white rounded-xl shadow overflow-hidden">
               {loading ? (
                 <div className="p-8 text-center text-sm" style={{ color: '#9a9a9a' }}>
@@ -416,32 +412,36 @@ export default function Dashboard() {
                         {expandedOrder === order._id && (
                           <tr key={`${order._id}-detail`}>
                             <td colSpan={7} className="px-4 py-3" style={{ backgroundColor: '#fafafa' }}>
-                              <table className="w-full text-xs">
-                                <thead>
-                                  <tr style={{ color: '#9a9a9a' }}>
-                                    <th className="text-left py-1">Producto</th>
-                                    <th className="text-left py-1">SKU</th>
-                                    <th className="text-center py-1">Cantidad</th>
-                                    <th className="text-right py-1">Precio</th>
-                                    <th className="text-right py-1">Subtotal</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {order.items.map((item, i) => (
-                                    <tr key={i} className="border-t border-gray-100">
-                                      <td className="py-1.5" style={{ color: '#4a4a4a' }}>{item.name}</td>
-                                      <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
-                                      <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
-                                      <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
-                                        ${item.appliedPrice?.toLocaleString('es-MX')}
-                                      </td>
-                                      <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
-                                        ${item.subtotal?.toLocaleString('es-MX')}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                             <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
+  <thead>
+    <tr style={{ color: '#9a9a9a' }}>
+      <th className="text-left py-1" style={{ width: '35%' }}>Producto</th>
+      <th className="text-left py-1" style={{ width: '12%' }}>SKU</th>
+      <th className="text-center py-1" style={{ width: '10%' }}>Cantidad</th>
+      <th className="text-right py-1" style={{ width: '10%' }}>Precio</th>
+      <th className="text-right py-1" style={{ width: '10%' }}>Subtotal</th>
+      <th className="text-left py-1 pl-3" style={{ width: '23%' }}>Observaciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {order.items.map((item, i) => (
+      <tr key={i} className="border-t border-gray-100">
+        <td className="py-1.5 pr-2" style={{ color: '#4a4a4a' }}>{item.name}</td>
+        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
+        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
+        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
+          ${item.appliedPrice?.toLocaleString('es-MX')}
+        </td>
+        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
+          ${item.subtotal?.toLocaleString('es-MX')}
+        </td>
+        <td className="py-1.5 pl-3" style={{ color: '#6b6b6b', fontStyle: 'italic' }}>
+          {item.notes || '—'}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
                             </td>
                           </tr>
                         )}
