@@ -118,4 +118,14 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// DELETE /api/products/all — borrar todo el catálogo (solo admin)
+router.delete('/all', protect, adminOnly, async (req, res) => {
+  try {
+    const result = await Product.deleteMany({});
+    res.json({ message: 'Catálogo vaciado', deleted: result.deletedCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
