@@ -1,6 +1,8 @@
+import { useState } from 'react';
+
 export default function ConfirmDialog({ message, onConfirm, onCancel }) {
   return (
-<div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
         <p className="text-gray-800 text-sm font-medium mb-6 text-center">{message}</p>
         <div className="flex gap-3">

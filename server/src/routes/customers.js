@@ -10,7 +10,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // POST /api/customers — registrar cliente nuevo
 router.post('/', protect, async (req, res) => {
   try {
-    const { name, email, phone, company, rfc, paymentType, deliveryDate, requiresInvoice } = req.body;
+    const { name, email, phone, company, rfc, paymentType, deliveryDate, requiresInvoice, personType } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: 'El nombre es requerido' });
@@ -19,18 +19,30 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ message: 'La fecha de entrega es requerida' });
     }
 
-    const count = await Customer.countDocuments();
-    const customerCode = `C${String(count + 1).padStart(3, '0')}`;
+    // Buscar el código más alto existente
+    const lastCustomer = await Customer.findOne({ customerCode: /^C\d+$/ })
+      .sort({ customerCode: -1 })
+      .limit(1);
+    
+    let nextNumber = 1;
+    if (lastCustomer && lastCustomer.customerCode) {
+      const num = parseInt(lastCustomer.customerCode.substring(1));
+      if (!isNaN(num)) nextNumber = num + 1;
+    }
+
+    const customerCode = `C${String(nextNumber).padStart(3, '0')}`;
+
     const customer = await Customer.create({
       name,
       email: email || null,
       phone: phone || null,
       company: company || null,
       rfc: rfc || null,
+      personType: personType || 'fisica',
       requiresInvoice: requiresInvoice || false,
       paymentType: paymentType || 'contado',
       deliveryDate: new Date(deliveryDate),
-       customerCode
+      customerCode
     });
 
     res.status(201).json(customer);
@@ -136,6 +148,19 @@ router.post('/import', protect, adminOnly, upload.single('file'), async (req, re
       total: customers.length
     });
 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE /api/customers/:id — eliminar cliente (solo admin)
+router.delete('/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndDelete(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: 'Cliente no encontrado' });
+    }
+    res.json({ message: 'Cliente eliminado correctamente' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

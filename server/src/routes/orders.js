@@ -121,6 +121,16 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
+// DELETE /api/orders/all — eliminar todas las órdenes (solo admin)
+router.delete('/all', protect, adminOnly, async (req, res) => {
+  try {
+    const result = await Order.deleteMany({});
+    res.json({ message: 'Todas las órdenes eliminadas', deleted: result.deletedCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // DELETE /api/orders/:id — eliminar orden (solo admin)
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {

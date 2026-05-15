@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import Users from './Users';
 import Products from './Products';
 import Customers from './Customers';
+import ConfirmDialog from '../components/ConfirmDialog';
+import ConfirmDialogSecure from '../components/ConfirmDialogSecure';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,6 +15,9 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [success, setSuccess] = useState('');
   const [filters, setFilters] = useState({
     stand: '',
     paymentType: '',
@@ -42,6 +48,30 @@ export default function Dashboard() {
   };
 
   useEffect(() => { fetchOrders(); }, [filters]);
+
+  const handleDeleteOrder = async () => {
+    try {
+      await api.delete(`/orders/${confirmDeleteId}`);
+      setSuccess('Orden eliminada correctamente');
+      setConfirmDeleteId(null);
+      fetchOrders();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteAllOrders = async () => {
+    try {
+      const { data } = await api.delete('/orders/all');
+      setSuccess(`${data.deleted} orden(es) eliminada(s)`);
+      setConfirmDeleteAll(false);
+      fetchOrders();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleExportAll = async () => {
     try {
@@ -151,6 +181,13 @@ export default function Dashboard() {
       {view === 'orders' && (
         <div className="max-w-7xl mx-auto px-6 py-6">
 
+          {success && (
+            <div className="text-sm rounded-lg px-4 py-2 mb-4"
+              style={{ backgroundColor: '#edf7e6', color: '#3d6b28' }}>
+              {success}
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow p-4">
               <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
@@ -216,15 +253,28 @@ export default function Dashboard() {
             >
               Limpiar
             </button>
-            <button
-              onClick={handleExportAll}
-              className="ml-auto text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-              style={{ backgroundColor: '#5a8a3c' }}
-              onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
-              onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
-            >
-              Exportar todo
-            </button>
+            <div className="ml-auto flex gap-2">
+              {orders.length > 0 && (
+                <button
+                  onClick={() => setConfirmDeleteAll(true)}
+                  className="text-sm font-semibold px-4 py-2 rounded-lg transition"
+                  style={{ backgroundColor: '#fdeaea', color: '#e53935' }}
+                  onMouseEnter={e => { e.target.style.backgroundColor = '#e53935'; e.target.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.target.style.backgroundColor = '#fdeaea'; e.target.style.color = '#e53935'; }}
+                >
+                  Eliminar todas
+                </button>
+              )}
+              <button
+                onClick={handleExportAll}
+                className="text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                style={{ backgroundColor: '#5a8a3c' }}
+                onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
+                onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
+              >
+                Exportar todo
+              </button>
+            </div>
           </div>
 
           {isGrouped ? (
@@ -266,6 +316,7 @@ export default function Dashboard() {
                         <th className="px-5 py-2 text-left">Stand</th>
                         <th className="px-5 py-2 text-left">Productos</th>
                         <th className="px-5 py-2 text-right">Total</th>
+                        <th className="px-5 py-2 text-right"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -284,40 +335,51 @@ export default function Dashboard() {
                             <td className="px-5 py-3 text-right font-semibold" style={{ color: '#4a4a4a' }}>
                               ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </td>
+                            <td className="px-5 py-3 text-right">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
+                                className="p-1.5 rounded-lg transition"
+                                style={{ color: '#9a9a9a' }}
+                                onMouseEnter={e => { e.currentTarget.style.color = '#e57373'; e.currentTarget.style.backgroundColor = '#fdeaea'; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                title="Eliminar orden">
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
                           </tr>
                           {expandedOrder === order._id && (
                             <tr key={`${order._id}-detail`}>
-                              <td colSpan={4} className="px-5 py-3" style={{ backgroundColor: '#fafafa' }}>
+                              <td colSpan={5} className="px-5 py-3" style={{ backgroundColor: '#fafafa' }}>
                                 <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
-  <thead>
-    <tr style={{ color: '#9a9a9a' }}>
-      <th className="text-left py-1" style={{ width: '35%' }}>Producto</th>
-      <th className="text-left py-1" style={{ width: '12%' }}>SKU</th>
-      <th className="text-center py-1" style={{ width: '10%' }}>Cantidad</th>
-      <th className="text-right py-1" style={{ width: '10%' }}>Precio</th>
-      <th className="text-right py-1" style={{ width: '10%' }}>Subtotal</th>
-      <th className="text-left py-1 pl-3" style={{ width: '23%' }}>Observaciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {order.items.map((item, i) => (
-      <tr key={i} className="border-t border-gray-100">
-        <td className="py-1.5 pr-2" style={{ color: '#4a4a4a' }}>{item.name}</td>
-        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
-        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
-        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
-          ${item.appliedPrice?.toLocaleString('es-MX')}
-        </td>
-        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
-          ${item.subtotal?.toLocaleString('es-MX')}
-        </td>
-        <td className="py-1.5 pl-3" style={{ color: '#6b6b6b', fontStyle: 'italic' }}>
-          {item.notes || '—'}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+                                  <thead>
+                                    <tr style={{ color: '#9a9a9a' }}>
+                                      <th className="text-left py-1" style={{ width: '35%' }}>Producto</th>
+                                      <th className="text-left py-1" style={{ width: '12%' }}>SKU</th>
+                                      <th className="text-center py-1" style={{ width: '10%' }}>Cantidad</th>
+                                      <th className="text-right py-1" style={{ width: '10%' }}>Precio</th>
+                                      <th className="text-right py-1" style={{ width: '10%' }}>Subtotal</th>
+                                      <th className="text-left py-1 pl-3" style={{ width: '23%' }}>Observaciones</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {order.items.map((item, i) => (
+                                      <tr key={i} className="border-t border-gray-100">
+                                        <td className="py-1.5 pr-2" style={{ color: '#4a4a4a' }}>{item.name}</td>
+                                        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
+                                        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
+                                        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
+                                          ${item.appliedPrice?.toLocaleString('es-MX')}
+                                        </td>
+                                        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
+                                          ${item.subtotal?.toLocaleString('es-MX')}
+                                        </td>
+                                        <td className="py-1.5 pl-3" style={{ color: '#6b6b6b', fontStyle: 'italic' }}>
+                                          {item.notes || '—'}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
                               </td>
                             </tr>
                           )}
@@ -361,6 +423,7 @@ export default function Dashboard() {
                           Total <SortIcon field="total" />
                         </button>
                       </th>
+                      <th className="px-4 py-3 text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -408,40 +471,51 @@ export default function Dashboard() {
                           <td className="px-4 py-3 text-right font-semibold" style={{ color: '#4a4a4a' }}>
                             ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                           </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
+                              className="p-1.5 rounded-lg transition"
+                              style={{ color: '#9a9a9a' }}
+                              onMouseEnter={e => { e.currentTarget.style.color = '#e57373'; e.currentTarget.style.backgroundColor = '#fdeaea'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              title="Eliminar orden">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
                         </tr>
                         {expandedOrder === order._id && (
                           <tr key={`${order._id}-detail`}>
-                            <td colSpan={7} className="px-4 py-3" style={{ backgroundColor: '#fafafa' }}>
-                             <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
-  <thead>
-    <tr style={{ color: '#9a9a9a' }}>
-      <th className="text-left py-1" style={{ width: '35%' }}>Producto</th>
-      <th className="text-left py-1" style={{ width: '12%' }}>SKU</th>
-      <th className="text-center py-1" style={{ width: '10%' }}>Cantidad</th>
-      <th className="text-right py-1" style={{ width: '10%' }}>Precio</th>
-      <th className="text-right py-1" style={{ width: '10%' }}>Subtotal</th>
-      <th className="text-left py-1 pl-3" style={{ width: '23%' }}>Observaciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {order.items.map((item, i) => (
-      <tr key={i} className="border-t border-gray-100">
-        <td className="py-1.5 pr-2" style={{ color: '#4a4a4a' }}>{item.name}</td>
-        <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
-        <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
-        <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
-          ${item.appliedPrice?.toLocaleString('es-MX')}
-        </td>
-        <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
-          ${item.subtotal?.toLocaleString('es-MX')}
-        </td>
-        <td className="py-1.5 pl-3" style={{ color: '#6b6b6b', fontStyle: 'italic' }}>
-          {item.notes || '—'}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+                            <td colSpan={8} className="px-4 py-3" style={{ backgroundColor: '#fafafa' }}>
+                              <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
+                                <thead>
+                                  <tr style={{ color: '#9a9a9a' }}>
+                                    <th className="text-left py-1" style={{ width: '35%' }}>Producto</th>
+                                    <th className="text-left py-1" style={{ width: '12%' }}>SKU</th>
+                                    <th className="text-center py-1" style={{ width: '10%' }}>Cantidad</th>
+                                    <th className="text-right py-1" style={{ width: '10%' }}>Precio</th>
+                                    <th className="text-right py-1" style={{ width: '10%' }}>Subtotal</th>
+                                    <th className="text-left py-1 pl-3" style={{ width: '23%' }}>Observaciones</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {order.items.map((item, i) => (
+                                    <tr key={i} className="border-t border-gray-100">
+                                      <td className="py-1.5 pr-2" style={{ color: '#4a4a4a' }}>{item.name}</td>
+                                      <td className="py-1.5" style={{ color: '#6b6b6b' }}>{item.barcode}</td>
+                                      <td className="py-1.5 text-center" style={{ color: '#6b6b6b' }}>{item.quantity}</td>
+                                      <td className="py-1.5 text-right" style={{ color: '#6b6b6b' }}>
+                                        ${item.appliedPrice?.toLocaleString('es-MX')}
+                                      </td>
+                                      <td className="py-1.5 text-right font-medium" style={{ color: '#4a4a4a' }}>
+                                        ${item.subtotal?.toLocaleString('es-MX')}
+                                      </td>
+                                      <td className="py-1.5 pl-3" style={{ color: '#6b6b6b', fontStyle: 'italic' }}>
+                                        {item.notes || '—'}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </td>
                           </tr>
                         )}
@@ -454,6 +528,23 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
+   {confirmDeleteId && (
+  <ConfirmDialog
+    message="¿Estás seguro de eliminar esta orden? Esta acción no se puede deshacer."
+    onConfirm={handleDeleteOrder}
+    onCancel={() => setConfirmDeleteId(null)}
+  />
+)}
+
+{confirmDeleteAll && (
+  <ConfirmDialogSecure
+    message={`Estás a punto de eliminar TODAS las ${orders.length} órdenes. Esta acción no se puede deshacer.`}
+    expectedPhrase="dipamex2026"
+    onConfirm={handleDeleteAllOrders}
+    onCancel={() => setConfirmDeleteAll(false)}
+  />
+)}
     </div>
   );
 }
