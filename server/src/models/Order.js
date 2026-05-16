@@ -57,8 +57,20 @@ const orderSchema = new mongoose.Schema({
 
 orderSchema.pre('save', async function() {
   if (this.orderNumber) return;
-  const count = await mongoose.model('Order').countDocuments();
-  this.orderNumber = `ORD-${String(count + 1).padStart(3, '0')}`;
+
+  // Buscar la orden con el número más alto existente
+  const lastOrder = await mongoose.model('Order')
+    .findOne({ orderNumber: /^ORD-\d+$/ })
+    .sort({ orderNumber: -1 })
+    .limit(1);
+
+  let nextNumber = 1;
+  if (lastOrder && lastOrder.orderNumber) {
+    const num = parseInt(lastOrder.orderNumber.substring(4));
+    if (!isNaN(num)) nextNumber = num + 1;
+  }
+
+  this.orderNumber = `ORD-${String(nextNumber).padStart(3, '0')}`;
 });
 
 module.exports = mongoose.model('Order', orderSchema);
