@@ -61,6 +61,8 @@ export default function Customers() {
   const [form, setForm] = useState(emptyForm);
   const [confirmId, setConfirmId] = useState(null);
   const [originalForm, setOriginalForm] = useState(emptyForm);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const fetchCustomers = async (q = '') => {
     try {
@@ -164,6 +166,37 @@ export default function Customers() {
     }
   };
 
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortBy !== field) return <span style={{ color: '#ccc' }}> ↕</span>;
+    return <span style={{ color: '#5a8a3c' }}>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>;
+  };
+
+  const sortedCustomers = [...customers].sort((a, b) => {
+    let valA = a[sortBy];
+    let valB = b[sortBy];
+
+    if (sortBy === 'deliveryDate') {
+      valA = valA ? new Date(valA).getTime() : 0;
+      valB = valB ? new Date(valB).getTime() : 0;
+    } else {
+      valA = (valA || '').toString().toLowerCase();
+      valB = (valB || '').toString().toLowerCase();
+    }
+
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -232,17 +265,41 @@ export default function Customers() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 uppercase text-xs" style={{ color: '#6b6b6b' }}>
               <tr>
-                <th className="px-4 py-3 text-left">Código</th>
-                <th className="px-4 py-3 text-left">Nombre</th>
-                <th className="px-4 py-3 text-left">Empresa/Razón Social</th>
-                <th className="px-4 py-3 text-left">Pago</th>
-                <th className="px-4 py-3 text-left">Entrega</th>
-                <th className="px-4 py-3 text-left">Factura</th>
+                <th className="px-4 py-3 text-left">
+                  <button onClick={() => handleSort('customerCode')} className="flex items-center hover:opacity-70">
+                    Código <SortIcon field="customerCode" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <button onClick={() => handleSort('name')} className="flex items-center hover:opacity-70">
+                    Nombre <SortIcon field="name" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <button onClick={() => handleSort('company')} className="flex items-center hover:opacity-70">
+                    Empresa/Razón Social <SortIcon field="company" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <button onClick={() => handleSort('paymentType')} className="flex items-center hover:opacity-70">
+                    Pago <SortIcon field="paymentType" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <button onClick={() => handleSort('deliveryDate')} className="flex items-center hover:opacity-70">
+                    Entrega <SortIcon field="deliveryDate" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <button onClick={() => handleSort('requiresInvoice')} className="flex items-center hover:opacity-70">
+                    Factura <SortIcon field="requiresInvoice" />
+                  </button>
+                </th>
                 <th className="px-4 py-3 text-left"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {customers.map(c => (
+              {sortedCustomers.map(c => (
                 <tr key={c._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <span className="text-xs font-bold px-2 py-1 rounded-full"

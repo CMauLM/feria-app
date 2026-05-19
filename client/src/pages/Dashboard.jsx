@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
@@ -109,6 +109,7 @@ export default function Dashboard() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      fetchOrders()
     } catch (err) {
       console.error(err);
     }
@@ -156,7 +157,7 @@ export default function Dashboard() {
             { key: 'customers', label: 'Clientes' },
             { key: 'products', label: 'Productos' },
             { key: 'users', label: 'Usuarios' }
-          ].map(({ key, label }) => (
+          ].filter(tab => user?.role === 'admin' || tab.key === 'orders' || tab.key === 'customers').map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setView(key)}
@@ -189,23 +190,28 @@ export default function Dashboard() {
           )}
 
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
-              <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>{orders.length}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm" style={{ color: '#9a9a9a' }}>Total ventas</p>
-              <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
-                ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm" style={{ color: '#9a9a9a' }}>Clientes</p>
-              <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>
-                {Object.keys(groupedByCustomer).length}
-              </p>
-            </div>
-          </div>
+  <div className="bg-white rounded-xl shadow p-4">
+    <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
+    <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>{orders.length}</p>
+  </div>
+  <div className="bg-white rounded-xl shadow p-4">
+    <p className="text-sm" style={{ color: '#9a9a9a' }}>Exportadas</p>
+    <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
+      {orders.length > 0
+        ? Math.round((orders.filter(o => o.exported).length / orders.length) * 100)
+        : 0}%
+      <span className="text-sm font-normal ml-2" style={{ color: '#9a9a9a' }}>
+        ({orders.filter(o => o.exported).length}/{orders.length})
+      </span>
+    </p>
+  </div>
+  <div className="bg-white rounded-xl shadow p-4">
+    <p className="text-sm" style={{ color: '#9a9a9a' }}>Clientes</p>
+    <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>
+      {Object.keys(groupedByCustomer).length}
+    </p>
+  </div>
+</div>
 
           <div className="bg-white rounded-xl shadow p-4 mb-6 flex gap-3 flex-wrap items-center">
             <input
@@ -254,7 +260,7 @@ export default function Dashboard() {
               Limpiar
             </button>
             <div className="ml-auto flex gap-2">
-              {orders.length > 0 && (
+              {orders.length > 0 && user?.role === 'admin' && (
                 <button
                   onClick={() => setConfirmDeleteAll(true)}
                   className="text-sm font-semibold px-4 py-2 rounded-lg transition"
@@ -265,15 +271,17 @@ export default function Dashboard() {
                   Eliminar todas
                 </button>
               )}
-              <button
-                onClick={handleExportAll}
-                className="text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-                style={{ backgroundColor: '#5a8a3c' }}
-                onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
-                onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
-              >
-                Exportar todo
-              </button>
+              {user?.role === 'admin' && (
+                <button
+                  onClick={handleExportAll}
+                  className="text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                  style={{ backgroundColor: '#5a8a3c' }}
+                  onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
+                  onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
+                >
+                  Exportar todo
+                </button>
+              )}
             </div>
           </div>
 
@@ -326,7 +334,19 @@ export default function Dashboard() {
                             className="cursor-pointer hover:bg-gray-50"
                             onClick={() => setExpandedOrder(expandedOrder === order._id ? null : order._id)}>
                             <td className="px-5 py-3 font-medium" style={{ color: '#5a8a3c' }}>
-                              {order.orderNumber}
+                              <div className="flex items-center gap-2">
+                                {order.orderNumber}
+                                {order.items?.some(i => i.notes) && (
+                                  <span title="Tiene observaciones" style={{ color: '#5a8a3c' }}>
+                                    <MessageSquare size={14} />
+                                  </span>
+                                )}
+                                {order.exported && (
+                                  <span title={`Exportado el ${new Date(order.exportedAt).toLocaleDateString('es-MX')}`} style={{ color: '#3d6b28' }}>
+                                    <CheckCircle2 size={14} />
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-5 py-3" style={{ color: '#6b6b6b' }}>{order.stand}</td>
                             <td className="px-5 py-3" style={{ color: '#6b6b6b' }}>
@@ -336,6 +356,7 @@ export default function Dashboard() {
                               ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </td>
                             <td className="px-5 py-3 text-right">
+                              {user?.role === 'admin' && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
                                 className="p-1.5 rounded-lg transition"
@@ -344,7 +365,7 @@ export default function Dashboard() {
                                 onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                                 title="Eliminar orden">
                                 <Trash2 size={14} />
-                              </button>
+                              </button>)}
                             </td>
                           </tr>
                           {expandedOrder === order._id && (
@@ -432,8 +453,20 @@ export default function Dashboard() {
                         <tr key={order._id}
                           className="cursor-pointer hover:bg-gray-50"
                           onClick={() => setExpandedOrder(expandedOrder === order._id ? null : order._id)}>
-                          <td className="px-4 py-3 font-medium" style={{ color: '#5a8a3c' }}>
-                            {order.orderNumber}
+                          <td className="px-5 py-3 font-medium" style={{ color: '#5a8a3c' }}>
+                            <div className="flex items-center gap-2">
+                              {order.orderNumber}
+                              {order.items?.some(i => i.notes) && (
+                                <span title="Tiene observaciones" style={{ color: '#5a8a3c' }}>
+                                  <MessageSquare size={14} />
+                                </span>
+                              )}
+                              {order.exported && (
+                                <span title={`Exportado el ${new Date(order.exportedAt).toLocaleDateString('es-MX')}`} style={{ color: '#3d6b28' }}>
+                                  <CheckCircle2 size={14} />
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
@@ -472,6 +505,7 @@ export default function Dashboard() {
                             ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-right">
+                            {user?.role === 'admin' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
                               className="p-1.5 rounded-lg transition"
@@ -480,7 +514,7 @@ export default function Dashboard() {
                               onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                               title="Eliminar orden">
                               <Trash2 size={14} />
-                            </button>
+                            </button>)}
                           </td>
                         </tr>
                         {expandedOrder === order._id && (
@@ -529,22 +563,22 @@ export default function Dashboard() {
         </div>
       )}
 
-   {confirmDeleteId && (
-  <ConfirmDialog
-    message="¿Estás seguro de eliminar esta orden? Esta acción no se puede deshacer."
-    onConfirm={handleDeleteOrder}
-    onCancel={() => setConfirmDeleteId(null)}
-  />
-)}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          message="¿Estás seguro de eliminar esta orden? Esta acción no se puede deshacer."
+          onConfirm={handleDeleteOrder}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
 
-{confirmDeleteAll && (
-  <ConfirmDialogSecure
-    message={`Estás a punto de eliminar TODAS las ${orders.length} órdenes. Esta acción no se puede deshacer.`}
-    expectedPhrase="dipamex2026"
-    onConfirm={handleDeleteAllOrders}
-    onCancel={() => setConfirmDeleteAll(false)}
-  />
-)}
+      {confirmDeleteAll && (
+        <ConfirmDialogSecure
+          message={`Estás a punto de eliminar TODAS las ${orders.length} órdenes. Esta acción no se puede deshacer.`}
+          expectedPhrase="dipamex2026"
+          onConfirm={handleDeleteAllOrders}
+          onCancel={() => setConfirmDeleteAll(false)}
+        />
+      )}
     </div>
   );
 }

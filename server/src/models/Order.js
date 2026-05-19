@@ -52,7 +52,15 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ['open', 'confirmed'],
     default: 'confirmed'
-  }
+  },
+  exported: {
+  type: Boolean,
+  default: false
+},
+exportedAt: {
+  type: Date,
+  default: null
+}
 }, { timestamps: true });
 
 orderSchema.pre('save', async function() {

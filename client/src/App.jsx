@@ -18,8 +18,8 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to={user.role === 'admin' ? '/dashboard' : '/orders'} /> : <Login />} />
-      <Route path="/dashboard" element={<PrivateRoute adminOnly><Dashboard /></PrivateRoute>} />
+      <Route path="/" element={user ? <Navigate to={(user.role === 'admin' || user.role === 'capturista') ? '/dashboard' : '/orders'} /> : <Login />} />
+      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
     </Routes>
   );

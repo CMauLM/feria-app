@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://feria-app-production.up.railway.app/api'
+  baseURL: 'https://feria-app-production.up.railway.app/api',
+  timeout: 30000
 });
-
 // Agregar token automáticamente a cada request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');

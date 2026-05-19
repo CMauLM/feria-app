@@ -25,4 +25,9 @@ const adminOnly = (req, res, next) => {
   res.status(403).json({ message: 'Acceso restringido a administradores' });
 };
 
-module.exports = { protect, adminOnly };
+const adminOrCapturista = (req, res, next) => {
+  if (req.user?.role === 'admin' || req.user?.role === 'capturista') return next();
+  res.status(403).json({ message: 'Acceso restringido' });
+};
+
+module.exports = { protect, adminOnly, adminOrCapturista };

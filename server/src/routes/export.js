@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
 const Order = require('../models/Order');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly, adminOrCapturista } = require('../middleware/auth');
 
 // GET /api/export/orders — exportar órdenes a Excel
 router.get('/orders', protect, adminOnly, async (req, res) => {
@@ -23,26 +23,26 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
     for (const order of orders) {
       for (const item of order.items) {
         rows.push({
-  '# Orden': order.orderNumber,
-  'Fecha': new Date(order.createdAt).toLocaleDateString('es-MX'),
-  'Stand': order.stand,
-  'Cliente': order.customer.name,
-  'Correo': order.customer.email || '',
-  'Pago': order.customer?.paymentType || order.paymentType,
-  'Factura': order.customer?.requiresInvoice ?? order.requiresInvoice ? 'Sí' : 'No',
-  'Fecha Entrega': order.customer?.deliveryDate
-    ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
-    : order.deliveryDate
-      ? new Date(order.deliveryDate).toLocaleDateString('es-MX')
-      : '—',
-  'Producto': item.name,
-  'Código': item.barcode,
-  'Cantidad': item.quantity,
-  'Precio Unit.': item.appliedPrice,
-  'Subtotal': item.subtotal,
-  'Total Orden': order.total,
-  'Observaciones': item.notes || ''
-});
+          '# Orden': order.orderNumber,
+          'Fecha': new Date(order.createdAt).toLocaleDateString('es-MX'),
+          'Stand': order.stand,
+          'Cliente': order.customer.name,
+          'Correo': order.customer.email || '',
+          'Pago': order.customer?.paymentType || order.paymentType,
+          'Factura': order.customer?.requiresInvoice ?? order.requiresInvoice ? 'Sí' : 'No',
+          'Fecha Entrega': order.customer?.deliveryDate
+            ? new Date(order.customer.deliveryDate).toLocaleDateString('es-MX')
+            : order.deliveryDate
+              ? new Date(order.deliveryDate).toLocaleDateString('es-MX')
+              : '—',
+          'Producto': item.name,
+          'Código': item.barcode,
+          'Cantidad': item.quantity,
+          'Precio Unit.': item.appliedPrice,
+          'Subtotal': item.subtotal,
+          'Total Orden': order.total,
+          'Observaciones': item.notes || ''
+        });
       }
     }
 
@@ -84,7 +84,7 @@ router.get('/orders', protect, adminOnly, async (req, res) => {
 
 // GET /api/export/customer/:id — exportar órdenes de un cliente en formato Microsip
 
-router.get('/customer/:id', protect, adminOnly, async (req, res) => {
+router.get('/customer/:id', protect, adminOrCapturista, async (req, res) => {
   try {
     const Customer = require('../models/Customer');
     const customer = await Customer.findById(req.params.id);
@@ -117,7 +117,10 @@ router.get('/customer/:id', protect, adminOnly, async (req, res) => {
     XLSX.utils.book_append_sheet(wb, ws, customer.name.substring(0, 31));
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
+    await Order.updateMany(
+      { 'customer._id': req.params.id },
+      { $set: { exported: true, exportedAt: new Date() } }
+    );
     const filename = `${customer.customerCode}_${customer.name.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

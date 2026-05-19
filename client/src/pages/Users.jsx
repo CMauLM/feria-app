@@ -292,18 +292,19 @@ export default function Users() {
 
             <div>
               <label className="block text-xs mb-1" style={{ color: '#6b6b6b' }}>Rol</label>
-              <select value={form.role}
-                onChange={e => setForm({ ...form, role: e.target.value })}
-                disabled={isDisabled}
-                className="w-full rounded-lg px-4 py-2 text-sm outline-none"
-                style={{
-                  border: '1.5px solid #ddd',
-                  backgroundColor: isDisabled ? '#f5f5f3' : '#fff',
-                  color: '#4a4a4a'
-                }}>
-                <option value="vendor">Vendor</option>
-                <option value="admin">Admin</option>
-              </select>
+            <select value={form.role}
+  onChange={e => setForm({ ...form, role: e.target.value })}
+  disabled={isDisabled}
+  className="w-full rounded-lg px-4 py-2 text-sm outline-none"
+  style={{
+    border: '1.5px solid #ddd',
+    backgroundColor: isDisabled ? '#f5f5f3' : '#fff',
+    color: '#4a4a4a'
+  }}>
+  <option value="vendor">Vendor</option>
+  <option value="capturista">Capturista</option>
+  <option value="admin">Admin</option>
+</select>
             </div>
 
             {form.role === 'vendor' && (
