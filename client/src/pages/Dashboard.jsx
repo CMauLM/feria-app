@@ -189,13 +189,21 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className={`grid ${user?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3'} gap-4 mb-6`}>
   <div className="bg-white rounded-xl shadow p-4">
     <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
     <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>{orders.length}</p>
   </div>
+  {user?.role === 'admin' && (
+    <div className="bg-white rounded-xl shadow p-4">
+      <p className="text-sm" style={{ color: '#9a9a9a' }}>Total ventas</p>
+      <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
+        ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+      </p>
+    </div>
+  )}
   <div className="bg-white rounded-xl shadow p-4">
-    <p className="text-sm" style={{ color: '#9a9a9a' }}>Exportadas</p>
+    <p className="text-sm" style={{ color: '#9a9a9a' }}>% Exportadas</p>
     <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
       {orders.length > 0
         ? Math.round((orders.filter(o => o.exported).length / orders.length) * 100)
@@ -357,15 +365,15 @@ export default function Dashboard() {
                             </td>
                             <td className="px-5 py-3 text-right">
                               {user?.role === 'admin' && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
-                                className="p-1.5 rounded-lg transition"
-                                style={{ color: '#9a9a9a' }}
-                                onMouseEnter={e => { e.currentTarget.style.color = '#e57373'; e.currentTarget.style.backgroundColor = '#fdeaea'; }}
-                                onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-                                title="Eliminar orden">
-                                <Trash2 size={14} />
-                              </button>)}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
+                                  className="p-1.5 rounded-lg transition"
+                                  style={{ color: '#9a9a9a' }}
+                                  onMouseEnter={e => { e.currentTarget.style.color = '#e57373'; e.currentTarget.style.backgroundColor = '#fdeaea'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                  title="Eliminar orden">
+                                  <Trash2 size={14} />
+                                </button>)}
                             </td>
                           </tr>
                           {expandedOrder === order._id && (
@@ -506,15 +514,15 @@ export default function Dashboard() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             {user?.role === 'admin' && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
-                              className="p-1.5 rounded-lg transition"
-                              style={{ color: '#9a9a9a' }}
-                              onMouseEnter={e => { e.currentTarget.style.color = '#e57373'; e.currentTarget.style.backgroundColor = '#fdeaea'; }}
-                              onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-                              title="Eliminar orden">
-                              <Trash2 size={14} />
-                            </button>)}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(order._id); }}
+                                className="p-1.5 rounded-lg transition"
+                                style={{ color: '#9a9a9a' }}
+                                onMouseEnter={e => { e.currentTarget.style.color = '#e57373'; e.currentTarget.style.backgroundColor = '#fdeaea'; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = '#9a9a9a'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                title="Eliminar orden">
+                                <Trash2 size={14} />
+                              </button>)}
                           </td>
                         </tr>
                         {expandedOrder === order._id && (
