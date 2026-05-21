@@ -131,4 +131,44 @@ router.get('/customer/:id', protect, adminOrCapturista, async (req, res) => {
   }
 });
 
+// GET /api/export/stand/:stand — exportar órdenes de un stand en formato Microsip
+router.get('/stand/:stand', protect, adminOrCapturista, async (req, res) => {
+  try {
+    const stand = req.params.stand;
+    const orders = await Order.find({ stand }).sort({ createdAt: 1 });
+
+    if (orders.length === 0) {
+      return res.status(404).json({ message: 'No hay órdenes para este stand' });
+    }
+
+    // Aplanar todos los productos de todas las órdenes
+    const rows = [];
+    for (const order of orders) {
+      for (const item of order.items) {
+        rows.push({
+          'A': 1,
+          'B': item.barcode || '',
+          'C': item.quantity,
+          'D': item.appliedPrice,
+          'E': 0
+        });
+      }
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows, { header: ['A', 'B', 'C', 'D', 'E'] });
+    XLSX.utils.book_append_sheet(wb, ws, stand.substring(0, 31));
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const safeStand = stand.replace(/[^a-z0-9]/gi, '_');
+    res.setHeader('Content-Disposition', `attachment; filename=Stand_${safeStand}.xlsx`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

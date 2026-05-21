@@ -115,6 +115,23 @@ export default function Dashboard() {
     }
   };
 
+  const handleExportStand = async () => {
+    try {
+      const response = await api.get(`/export/stand/${encodeURIComponent(filters.stand)}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Stand_${filters.stand}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSort = (field) => {
     setFilters(prev => ({
       ...prev,
@@ -189,37 +206,37 @@ export default function Dashboard() {
             </div>
           )}
 
-        <div className={`grid ${user?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3'} gap-4 mb-6`}>
-  <div className="bg-white rounded-xl shadow p-4">
-    <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
-    <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>{orders.length}</p>
-  </div>
-  {user?.role === 'admin' && (
-    <div className="bg-white rounded-xl shadow p-4">
-      <p className="text-sm" style={{ color: '#9a9a9a' }}>Total ventas</p>
-      <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
-        ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-      </p>
-    </div>
-  )}
-  <div className="bg-white rounded-xl shadow p-4">
-    <p className="text-sm" style={{ color: '#9a9a9a' }}>% Exportadas</p>
-    <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
-      {orders.length > 0
-        ? Math.round((orders.filter(o => o.exported).length / orders.length) * 100)
-        : 0}%
-      <span className="text-sm font-normal ml-2" style={{ color: '#9a9a9a' }}>
-        ({orders.filter(o => o.exported).length}/{orders.length})
-      </span>
-    </p>
-  </div>
-  <div className="bg-white rounded-xl shadow p-4">
-    <p className="text-sm" style={{ color: '#9a9a9a' }}>Clientes</p>
-    <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>
-      {Object.keys(groupedByCustomer).length}
-    </p>
-  </div>
-</div>
+          <div className={`grid ${user?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3'} gap-4 mb-6`}>
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-sm" style={{ color: '#9a9a9a' }}>Total órdenes</p>
+              <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>{orders.length}</p>
+            </div>
+            {user?.role === 'admin' && (
+              <div className="bg-white rounded-xl shadow p-4">
+                <p className="text-sm" style={{ color: '#9a9a9a' }}>Total ventas</p>
+                <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
+                  ${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            )}
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-sm" style={{ color: '#9a9a9a' }}>% Exportadas</p>
+              <p className="text-2xl font-bold" style={{ color: '#5a8a3c' }}>
+                {orders.length > 0
+                  ? Math.round((orders.filter(o => o.exported).length / orders.length) * 100)
+                  : 0}%
+                <span className="text-sm font-normal ml-2" style={{ color: '#9a9a9a' }}>
+                  ({orders.filter(o => o.exported).length}/{orders.length})
+                </span>
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-sm" style={{ color: '#9a9a9a' }}>Clientes</p>
+              <p className="text-2xl font-bold" style={{ color: '#4a4a4a' }}>
+                {Object.keys(groupedByCustomer).length}
+              </p>
+            </div>
+          </div>
 
           <div className="bg-white rounded-xl shadow p-4 mb-6 flex gap-3 flex-wrap items-center">
             <input
@@ -268,6 +285,17 @@ export default function Dashboard() {
               Limpiar
             </button>
             <div className="ml-auto flex gap-2">
+              {filters.stand && orders.length > 0 && (
+                <button
+                  onClick={handleExportStand}
+                  className="text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                  style={{ backgroundColor: '#5a8a3c' }}
+                  onMouseEnter={e => e.target.style.backgroundColor = '#3d6b28'}
+                  onMouseLeave={e => e.target.style.backgroundColor = '#5a8a3c'}
+                >
+                  Exportar a Microsip
+                </button>
+              )}
               {orders.length > 0 && user?.role === 'admin' && (
                 <button
                   onClick={() => setConfirmDeleteAll(true)}
