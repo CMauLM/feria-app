@@ -7,6 +7,7 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const customerRoutes = require('./routes/customers');
 const exportRoutes = require('./routes/export');
+const botWebhook = require('./bot/webhook');
 
 dotenv.config();
 connectDB();
@@ -24,6 +25,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/bot', botWebhook);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Feria App API running' });
