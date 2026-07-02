@@ -1,23 +1,14 @@
 const STATES = require('./states');
 const initialHandler = require('./handlers/initial');
+const onboardingNameHandler = require('./handlers/onboardingName');
+const onboardingEmailHandler = require('./handlers/onboardingEmail');
 
-// ============================================================================
-// Diccionario que mapea estado → handler
-// A medida que agreguemos handlers, se van agregando aquí.
-// ============================================================================
 const handlers = {
   [STATES.INITIAL]: initialHandler,
   [STATES.ONBOARDING_NAME]: onboardingNameHandler,
   [STATES.ONBOARDING_EMAIL]: onboardingEmailHandler,
-  [STATES.ASK_SCHOOL]: askSchoolHandler,
-  // ...
 };
 
-// ============================================================================
-// Ejecuta el handler correspondiente al estado actual de la conversación.
-// Cada handler recibe (conversation, message) y devuelve el siguiente estado
-// junto con actualizaciones al contexto.
-// ============================================================================
 async function route(conversation, message) {
   const handler = handlers[conversation.currentState];
 
