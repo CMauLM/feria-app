@@ -7,8 +7,9 @@ const initialHandler = require('./handlers/initial');
 // ============================================================================
 const handlers = {
   [STATES.INITIAL]: initialHandler,
-  // [STATES.ONBOARDING_NAME]: onboardingNameHandler,
-  // [STATES.ASK_SCHOOL]: askSchoolHandler,
+  [STATES.ONBOARDING_NAME]: onboardingNameHandler,
+  [STATES.ONBOARDING_EMAIL]: onboardingEmailHandler,
+  [STATES.ASK_SCHOOL]: askSchoolHandler,
   // ...
 };
 
