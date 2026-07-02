@@ -2,11 +2,14 @@ const STATES = require('./states');
 const initialHandler = require('./handlers/initial');
 const onboardingNameHandler = require('./handlers/onboardingName');
 const onboardingEmailHandler = require('./handlers/onboardingEmail');
+const askSchoolHandler = require('./handlers/askSchool');
+
 
 const handlers = {
   [STATES.INITIAL]: initialHandler,
   [STATES.ONBOARDING_NAME]: onboardingNameHandler,
   [STATES.ONBOARDING_EMAIL]: onboardingEmailHandler,
+  [STATES.ASK_SCHOOL]: askSchoolHandler,
 };
 
 async function route(conversation, message) {
