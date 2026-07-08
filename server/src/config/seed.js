@@ -2,7 +2,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./db');
 const User = require('../models/User');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const seed = async () => {
   await connectDB();

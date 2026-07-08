@@ -9,7 +9,7 @@ const customerRoutes = require('./routes/customers');
 const exportRoutes = require('./routes/export');
 const botWebhook = require('./bot/webhook');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 connectDB();
 
 const app = express();

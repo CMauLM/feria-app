@@ -7,6 +7,11 @@ const confirmSchoolHandler = require('./handlers/confirmSchool');
 const askLevelHandler = require('./handlers/askLevel');
 const askGradeHandler = require('./handlers/askGrade');
 const askSexHandler = require('./handlers/askSex');
+const showingQuoteHandler = require('./handlers/showingQuote');
+const askRemoveItemHandler = require('./handlers/askRemoveItem');
+const askReceiptTypeHandler = require('./handlers/askReceiptType');
+const askDeliveryTypeHandler = require('./handlers/askDeliveryType');
+const askAddressHandler = require('./handlers/askAddress');
 
 const handlers = {
   [STATES.INITIAL]: initialHandler,
@@ -17,6 +22,11 @@ const handlers = {
   [STATES.ASK_LEVEL]: askLevelHandler,
   [STATES.ASK_GRADE]: askGradeHandler,
   [STATES.ASK_SEX]: askSexHandler,
+  [STATES.SHOWING_QUOTE]: showingQuoteHandler,
+  [STATES.ASK_REMOVE_ITEM]: askRemoveItemHandler,
+  [STATES.ASK_RECEIPT_TYPE]: askReceiptTypeHandler,
+  [STATES.ASK_DELIVERY_TYPE]: askDeliveryTypeHandler,
+  [STATES.ASK_ADDRESS]: askAddressHandler,
 };
 
 async function route(conversation, message) {

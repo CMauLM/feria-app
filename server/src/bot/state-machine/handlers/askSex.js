@@ -1,15 +1,11 @@
 const STATES = require('../states');
 const whatsappClient = require('../../whatsapp-client');
-
-const SEX_LABELS = {
-  F: 'niña',
-  M: 'niño',
-  unisex: 'la misma lista'
-};
+const quoteService = require('../../quote-service');
 
 // ============================================================================
 // Handler ASK_SEX
-// Último dato antes de generar cotización.
+// Último dato antes de generar cotización. Al terminar, delega en
+// quote-service la búsqueda de la lista y el envío de la cotización.
 // ============================================================================
 async function handleAskSex(conversation, message) {
   const from = conversation.whatsappId;
@@ -30,24 +26,9 @@ async function handleAskSex(conversation, message) {
     return { nextState: STATES.ASK_SEX, contextUpdate: {} };
   }
 
-  // Ya tenemos todos los datos. Mostramos un resumen temporal.
-  // TODO: en el siguiente paso implementamos la búsqueda de la lista y la cotización.
-  const ctx = { ...conversation.context, sex };
-  const summary = `Perfecto, todo listo para armar tu cotización. Estos son los datos:\n\n` +
-    `👤 Cliente: ${ctx.customerName}\n` +
-    `📧 Correo: ${ctx.customerEmail}\n` +
-    `🏫 Escuela: ${ctx.schoolName}\n` +
-    `📚 Nivel: ${ctx.level}\n` +
-    `🔢 Grado: ${ctx.grade}°\n` +
-    `👶 Para: ${SEX_LABELS[sex]}\n\n` +
-    `En un momento te mando tu cotización...`;
+  await whatsappClient.sendText(from, 'Perfecto, dame un momento para armar tu cotización... 📋');
 
-  await whatsappClient.sendText(from, summary);
-
-  return {
-    nextState: STATES.SHOWING_QUOTE,
-    contextUpdate: { sex }
-  };
+  return await quoteService.buildAndSendQuote(conversation, { sex });
 }
 
 module.exports = handleAskSex;

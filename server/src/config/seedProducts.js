@@ -2,7 +2,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./db');
 const Product = require('../models/Product');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const seed = async () => {
   await connectDB();

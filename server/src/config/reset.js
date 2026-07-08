@@ -5,7 +5,7 @@ const Product = require('../models/Product');
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const reset = async () => {
   await connectDB();

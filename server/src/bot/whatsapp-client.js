@@ -93,8 +93,57 @@ async function sendInteractiveList(to, bodyText, buttonText, sections) {
   }
 }
 
+// ============================================================================
+// uploadMedia - sube un archivo (buffer) a la API de medios de Meta y
+// devuelve el media id para poder referenciarlo en un mensaje de documento
+// ============================================================================
+async function uploadMedia(buffer, filename, mimeType) {
+  try {
+    const form = new FormData();
+    form.append('messaging_product', 'whatsapp');
+    form.append('file', new Blob([buffer], { type: mimeType }), filename);
+
+    const response = await axios.post(
+      `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/media`,
+      form,
+      { headers: { 'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}` } }
+    );
+    console.log(`✅ Media subido: ${filename} (id: ${response.data.id})`);
+    return response.data.id;
+  } catch (error) {
+    console.error(`❌ Error subiendo media (${filename}):`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// ============================================================================
+// sendDocument - manda un documento (ej. PDF) ya subido previamente con uploadMedia
+// ============================================================================
+async function sendDocument(to, mediaId, filename, caption) {
+  try {
+    const response = await client.post('', {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'document',
+      document: {
+        id: mediaId,
+        filename,
+        caption
+      }
+    });
+    console.log(`✅ Documento enviado a ${to}: ${filename}`);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error enviando documento a ${to}:`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
 module.exports = {
   sendText,
   sendInteractiveButtons,
-  sendInteractiveList
+  sendInteractiveList,
+  uploadMedia,
+  sendDocument
 };

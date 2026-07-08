@@ -27,6 +27,7 @@ const STATES = {
 
   // Cotización
   SHOWING_QUOTE: 'SHOWING_QUOTE',
+  ASK_REMOVE_ITEM: 'ASK_REMOVE_ITEM',
 
   // Cierre del pedido
   ASK_RECEIPT_TYPE: 'ASK_RECEIPT_TYPE',
